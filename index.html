@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebRTC - Señalización Manual con ICE</title>
+  </head>
+  <body>
+    <h1>Conexión WebRTC con Señalización Manual e Intercambio ICE</h1>
+
+    <!-- SDP de Oferta -->
+    <h2>Dispositivo 1: Generar Oferta</h2>
+    <textarea
+      id="offer-sdp"
+      rows="6"
+      cols="60"
+      placeholder="Oferta SDP"
+    ></textarea>
+    <br />
+    <button onclick="createOffer()">Crear Oferta</button>
+
+    <!-- Copiar manualmente los candidatos ICE del dispositivo 1 -->
+    <h2>Dispositivo 1: Copiar y Pegar Candidatos ICE</h2>
+    <textarea
+      id="local-ice-candidates"
+      rows="6"
+      cols="60"
+      placeholder="Candidatos ICE generados por el dispositivo 1"
+    ></textarea>
+    <br />
+    <textarea
+      id="remote-ice-candidates"
+      rows="6"
+      cols="60"
+      placeholder="Pega los Candidatos ICE del dispositivo 2 aquí"
+    ></textarea>
+    <br />
+    <button onclick="addRemoteIceCandidates()">Agregar Candidatos ICE</button>
+
+    <!-- Copiar manualmente la respuesta aquí -->
+    <h2>Dispositivo 1: Pegar Respuesta</h2>
+    <textarea
+      id="answer-sdp"
+      rows="6"
+      cols="60"
+      placeholder="Pega la Respuesta SDP aquí"
+    ></textarea>
+    <br />
+    <button onclick="setAnswer()">Establecer Respuesta</button>
+
+    <hr />
+
+    <!-- SDP de Respuesta -->
+    <h2>Dispositivo 2: Pegar Oferta y Crear Respuesta</h2>
+    <textarea
+      id="remote-offer-sdp"
+      rows="6"
+      cols="60"
+      placeholder="Pega la Oferta SDP aquí"
+    ></textarea>
+    <br />
+    <button onclick="createAnswer()">Crear Respuesta</button>
+    <br />
+    <textarea
+      id="local-answer-sdp"
+      rows="6"
+      cols="60"
+      placeholder="Respuesta SDP"
+    ></textarea>
+
+    <!-- Copiar manualmente los candidatos ICE del dispositivo 2 -->
+    <h2>Dispositivo 2: Copiar y Pegar Candidatos ICE</h2>
+    <textarea
+      id="local-ice-candidates-2"
+      rows="6"
+      cols="60"
+      placeholder="Candidatos ICE generados por el dispositivo 2"
+    ></textarea>
+    <br />
+    <textarea
+      id="remote-ice-candidates-2"
+      rows="6"
+      cols="60"
+      placeholder="Pega los Candidatos ICE del dispositivo 1 aquí"
+    ></textarea>
+    <br />
+    <button onclick="addRemoteIceCandidates2()">Agregar Candidatos ICE</button>
+
+    <script>
+      let peerConnection1, peerConnection2;
+      const iceCandidates1 = [];
+      const iceCandidates2 = [];
+
+      const configuration = {
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      };
+
+      // Dispositivo 1: Crear la oferta
+      async function createOffer() {
+        peerConnection1 = new RTCPeerConnection(configuration);
+
+        // Al encontrar un candidato ICE, agregarlo al textarea
+        peerConnection1.onicecandidate = (event) => {
+          if (event.candidate) {
+            iceCandidates1.push(event.candidate);
+            document.getElementById('local-ice-candidates').value =
+              JSON.stringify(iceCandidates1);
+          }
+        };
+
+        const offer = await peerConnection1.createOffer();
+        await peerConnection1.setLocalDescription(offer);
+
+        document.getElementById('offer-sdp').value = JSON.stringify(
+          peerConnection1.localDescription
+        );
+      }
+
+      // Dispositivo 1: Establecer la respuesta
+      async function setAnswer() {
+        const answerSDP = document.getElementById('answer-sdp').value;
+        const remoteDesc = new RTCSessionDescription(JSON.parse(answerSDP));
+        await peerConnection1.setRemoteDescription(remoteDesc);
+      }
+
+      // Dispositivo 1: Agregar candidatos ICE remotos manualmente
+      function addRemoteIceCandidates() {
+        const remoteCandidates = JSON.parse(
+          document.getElementById('remote-ice-candidates').value
+        );
+        remoteCandidates.forEach((candidate) => {
+          peerConnection1.addIceCandidate(new RTCIceCandidate(candidate));
+        });
+      }
+
+      // Dispositivo 2: Crear la respuesta
+      async function createAnswer() {
+        peerConnection2 = new RTCPeerConnection(configuration);
+
+        // Al encontrar un candidato ICE, agregarlo al textarea
+        peerConnection2.onicecandidate = (event) => {
+          if (event.candidate) {
+            iceCandidates2.push(event.candidate);
+            document.getElementById('local-ice-candidates-2').value =
+              JSON.stringify(iceCandidates2);
+          }
+        };
+
+        const offerSDP = document.getElementById('remote-offer-sdp').value;
+        const remoteDesc = new RTCSessionDescription(JSON.parse(offerSDP));
+        await peerConnection2.setRemoteDescription(remoteDesc);
+
+        const answer = await peerConnection2.createAnswer();
+        await peerConnection2.setLocalDescription(answer);
+
+        document.getElementById('local-answer-sdp').value = JSON.stringify(
+          peerConnection2.localDescription
+        );
+      }
+
+      // Dispositivo 2: Agregar candidatos ICE remotos manualmente
+      function addRemoteIceCandidates2() {
+        const remoteCandidates = JSON.parse(
+          document.getElementById('remote-ice-candidates-2').value
+        );
+        remoteCandidates.forEach((candidate) => {
+          peerConnection2.addIceCandidate(new RTCIceCandidate(candidate));
+        });
+      }
+    </script>
+  </body>
+</html>
